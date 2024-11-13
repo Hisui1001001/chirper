@@ -12,7 +12,7 @@ const showingNavigationDropdown = ref(false);
 
 <template>
     <div>
-        <div class="min-h-screen bg-gray-100">
+        <div class="min-h-screen bg-gray-100 shadow-md">
             <nav class="bg-white border-b border-gray-100">
                 <!-- Primary Navigation Menu -->
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -35,6 +35,9 @@ const showingNavigationDropdown = ref(false);
                                     <NavLink :href="route('chirps.index')" :active="route().current('chirps.index')">
                                         Chirps
                                     </NavLink>
+                                <NavLink :href="route('eigo.index')" :active="route().current('eigo.index')">
+                                    Eigo🎬🍿
+                                </NavLink>
                             </div>
                         </div>
 
@@ -121,6 +124,9 @@ const showingNavigationDropdown = ref(false);
                             <ResponsiveNavLink :href="route('chirps.index')" :active="route().current('chirps.index')">
                                 Chirps
                             </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('eigo.index')" :active="route().current('eigo.index')">
+                            Eigo🎬🍿
+                        </ResponsiveNavLink>
                     </div>
 
                     <!-- Responsive Settings Options -->
