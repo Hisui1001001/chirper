@@ -159,6 +159,11 @@ const showingNavigationDropdown = ref(false);
             <main>
                 <slot />
             </main>
+
+            <!-- Footer -->
+            <footer class="py-4 text-center border-t">
+                <p class="font-serif text-gray-600">Jade '24</p>
+            </footer>
         </div>
     </div>
 </template>

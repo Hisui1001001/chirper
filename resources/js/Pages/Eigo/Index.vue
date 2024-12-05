@@ -1,16 +1,37 @@
-<!-- resources/js/Pages/Eigo/Index.vue -->
 <script setup>
-import { ref } from 'vue';
+import { ref, computed } from 'vue';
 import { Head, useForm } from '@inertiajs/vue3';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid'
-import { StarIcon as StarIconOutline } from '@heroicons/vue/24/outline'
-import { TrashIcon, PencilSquareIcon, XMarkIcon, CheckIcon } from '@heroicons/vue/24/outline'
+import EigoView from '@/Components/EigoView.vue';
+import StarRating from '@/Components/StarRating.vue';
+import { StarIcon as StarIconSolid } from '@heroicons/vue/24/solid';
+import { StarIcon as StarIconOutline } from '@heroicons/vue/24/outline';
+import { TrashIcon, PencilSquareIcon, XMarkIcon, CheckIcon } from '@heroicons/vue/24/outline';
 import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal.vue';
 
 const props = defineProps({
-    movies: Array
+    movies: {
+        type: Array,
+        default: () => []
+    }
 });
+
+const currentPage = ref(1);
+const rowsPerPage = ref(7);
+
+const paginatedMovies = computed(() => {
+    const start = (currentPage.value - 1) * rowsPerPage.value;
+    const end = start + rowsPerPage.value;
+    return props.movies.slice(start, end);
+});
+
+const totalPages = computed(() => Math.ceil(props.movies.length / rowsPerPage.value));
+
+const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages.value) {
+        currentPage.value = newPage;
+    }
+};
 
 const editingId = ref(null);
 
@@ -33,6 +54,24 @@ const editForm = useForm({
 });
 
 const showModal = ref(false);
+const showDetailModal = ref(false);
+const selectedMovie = ref(null);
+const showDeleteModal = ref(false);
+const itemToDelete = ref(null);
+
+const genres = [
+    'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary',
+    'Drama', 'Dystopian', 'Fantasy', 'Horror', 'Musical', 'Mystery', 'Romance', 'RomCom',
+    'Sci-Fi', 'Slice of Life', 'Thriller', 'Western'
+];
+
+const genreEmojis = {
+    'Action': '💥', 'Adventure': '🌎', 'Animation': '🎨', 'Comedy': '😂',
+    'Crime': '🚔', 'Documentary': '📽️', 'Drama': '🎭', 'Dystopian': '✨',
+    'Fantasy': '🔮', 'Horror': '👻', 'Musical': '🎵', 'Mystery': '🔍',
+    'Romance': '💖', 'RomCom': '💑', 'Sci-Fi': '🚀',
+    'Slice of Life': '👨‍👩‍👧', 'Thriller': '😱', 'Western': '🤠'
+};
 
 const openModal = () => {
     showModal.value = true;
@@ -75,9 +114,6 @@ const updateMovie = (movieId) => {
     });
 };
 
-const showDeleteModal = ref(false);
-const itemToDelete = ref(null);
-
 const openDeleteModal = (id) => {
     itemToDelete.value = id;
     showDeleteModal.value = true;
@@ -88,33 +124,25 @@ const closeDeleteModal = () => {
     itemToDelete.value = null;
 };
 
-const genreSelectClass = ref('max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-purple-500 scrollbar-track-purple-100');
+const openDetailModal = (movie) => {
+    selectedMovie.value = { ...movie };
+    showDetailModal.value = true;
+};
 
-const genres = [
-    'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary',
-    'Drama', 'Dystopian', 'Fantasy', 'Horror', 'Musical', 'Mystery', 'Romance', 'RomCom',
-    'Sci-Fi', 'Slice of Life', 'Thriller', 'Western'
-];
+const closeDetailModal = () => {
+    showDetailModal.value = false;
+    selectedMovie.value = null;
+};
 
-const genreEmojis = {
-    'Action': '💥',
-    'Adventure': '🌎',
-    'Animation': '🎨',
-    'Comedy': '😂',
-    'Crime': '🚔',
-    'Documentary': '📽️',
-    'Drama': '🎭',
-    'Dystopian': '✨',
-    'Fantasy': '🔮',
-    'Horror': '👻',
-    'Musical': '🎵',
-    'Mystery': '🔍',
-    'Romance': '💖',
-    'RomCom': '💑',
-    'Sci-Fi': '🚀',
-    'Slice of Life': '👨‍👩‍👧',
-    'Thriller': '😱',
-    'Western': '🤠'
+const handleMovieUpdate = (updatedMovie) => {
+    editForm.title = updatedMovie.title;
+    editForm.genre = updatedMovie.genre;
+    editForm.year_released = updatedMovie.year_released;
+    editForm.rating = updatedMovie.rating;
+    editForm.times_watched = updatedMovie.times_watched;
+    editForm.recommended = updatedMovie.recommended;
+    updateMovie(updatedMovie.id);
+    closeDetailModal();
 };
 </script>
 
@@ -147,7 +175,7 @@ const genreEmojis = {
                                 <thead class="bg-gradient-to-r from-purple-600 to-indigo-600">
                                     <tr>
                                         <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Title 🎥</th>
-                                        <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Genre</th>
+                                        <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Genre 🎞</th>
                                         <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Year 📅</th>
                                         <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Rating ⭐</th>
                                         <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-white uppercase tracking-wider">Times Watched 👀</th>
@@ -156,10 +184,10 @@ const genreEmojis = {
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-200">
-                                    <tr v-for="movie in movies" :key="movie.id" class="hover:bg-purple-50 transition-colors">
+                                    <tr v-for="movie in paginatedMovies" :key="movie.id" class="hover:bg-purple-50 transition-colors cursor-pointer">
                                         <!-- Normal View -->
                                         <template v-if="editingId !== movie.id">
-                                            <td class="px-6 py-4 whitespace-nowrap text-center font-medium text-gray-900">{{ movie.title }}</td>
+                                            <td @click="openDetailModal(movie)" class="px-6 py-4 whitespace-nowrap text-center font-medium text-gray-900 cursor-pointer hover:text-purple-600 hover:underline active:underline">{{ movie.title }}</td>
                                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
                                                     {{ genreEmojis[movie.genre] }} {{ movie.genre }}
@@ -205,7 +233,10 @@ const genreEmojis = {
                                                 <input v-model="editForm.year_released" type="number" class="text-center border-gray-300 rounded-md shadow-sm focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50 w-24" />
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-center">
-                                                <input v-model="editForm.rating" type="number" min="1" max="5" class="text-center border-gray-300 rounded-md shadow-sm focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50 w-16" />
+                                                <StarRating
+                                                    v-model="editForm.rating"
+                                                    class="mt-1"
+                                                    />
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                                 <input v-model="editForm.times_watched" type="number" min="0" class="text-center border-gray-300 rounded-md shadow-sm focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50 w-16" />
@@ -215,14 +246,10 @@ const genreEmojis = {
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                                 <button @click="updateMovie(movie.id)" class="text-emerald-600 hover:text-emerald-900 mr-2 transform hover:scale-110 transition">
-                                                    <CheckIcon class="h-5 w-5 stroke-[3]"
-                                                        aria-hidden="true"
-                                                    />
+                                                    <CheckIcon class="h-5 w-5 stroke-[3]" aria-hidden="true" />
                                                 </button>
                                                 <button @click="cancelEditing" class="text-gray-600 hover:text-gray-900 transform hover:scale-110 transition">
-                                                    <XMarkIcon class="h-5 w-5 stroke-[3]"
-                                                        aria-hidden="true"
-                                                    />
+                                                    <XMarkIcon class="h-5 w-5 stroke-[3]" aria-hidden="true" />
                                                 </button>
                                             </td>
                                         </template>
@@ -232,20 +259,26 @@ const genreEmojis = {
                         </div>
 
                         <!-- Add Movie Modal -->
-                        <div v-if="showModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center">
-                            <div class="bg-white rounded-lg p-8 max-w-md w-full">
-                                <h3 class="text-xl font-bold mb-4 text-purple-600 flex justify-center items-center">
-                                    <span class="mr-2">🎬</span> Add New Movie
+                        <div v-if="showModal" class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center pointer-events-none z-50">
+                            <div class="bg-white rounded-lg p-8 max-w-md w-full pointer-events-auto">
+                                <h3 class="text-xl font-bold mb-4 text-purple-600 flex items-center relative">
+                                    <button
+                                        @click="closeModal"
+                                        class="absolute right-0 rounded-full p-1 hover:text-gray-500 hover:bg-gray-100 transition-all"
+                                    >
+                                        <XMarkIcon class="h-6 w-6" />
+                                    </button>
+                                        <span class="flex-grow text-center">🎬 Add New Movie</span>
                                 </h3>
                                 <form @submit.prevent="submitMovie" class="space-y-4">
                                     <div class="space-y-4">
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700">Title 🎥</label>
+                                            <label class="block text-sm font-medium text-gray-700">Title 🎥 <span class="text-red-600">*</span></label>
                                             <input v-model="form.title" type="text" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50" required />
                                         </div>
 
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700">Genre</label>
+                                            <label class="block text-sm font-medium text-gray-700">Genre 🎞 <span class="text-red-600">*</span></label>
                                             <select
                                                 v-model="form.genre"
                                                 class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:border-purple-300 focus:ring focus:ring-purple-200 focus:ring-opacity-50"
@@ -278,26 +311,10 @@ const genreEmojis = {
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700">Rating</label>
                                             <div class="mt-1 flex items-center space-x-2">
-                                                <input
-                                                    v-model="form.rating"
-                                                    type="number"
-                                                    min="1"
-                                                    max="5"
-                                                    class="block w-20 border-gray-300 rounded-md shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-                                                    required
-                                                />
-                                                <div class="flex">
-                                                    <StarIconSolid
-                                                        v-for="n in form.rating"
-                                                        :key="n"
-                                                        class="h-5 w-5 text-yellow-400"
+                                                <StarRating
+                                                    v-model="editForm.rating"
+                                                    class="mt-1"
                                                     />
-                                                    <StarIconOutline
-                                                        v-for="n in 5-form.rating"
-                                                        :key="n+5"
-                                                        class="h-5 w-5 text-gray-300"
-                                                    />
-                                                </div>
                                             </div>
                                         </div>
 
@@ -328,7 +345,7 @@ const genreEmojis = {
                                             @click="closeModal"
                                             class="px-4 py-2 border border-gray-300 rounded-full shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition transform hover:scale-105"
                                         >
-                                            Cancel
+                                            Cancel ❌
                                         </button>
                                         <button
                                             type="submit"
@@ -340,11 +357,41 @@ const genreEmojis = {
                                 </form>
                             </div>
                         </div>
+
+                        <!-- Pagination Controls -->
+                        <div class="flex justify-center mt-4 space-x-2  relative z-0">
+                            <button
+                                @click="handlePageChange(currentPage - 1)"
+                                :disabled="currentPage === 1"
+                                class="px-4 py-2 bg-purple-800 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Previous
+                            </button>
+                            <span class="px-4 py-2">
+                                Page {{ currentPage }} of {{ totalPages }}
+                            </span>
+                            <button
+                                @click="handlePageChange(currentPage + 1)"
+                                :disabled="currentPage === totalPages"
+                                class="px-4 py-2 bg-purple-800 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Next
+                            </button>
+                        </div>
                         <!-- Delete Confirmation Modal -->
                         <DeleteConfirmationModal
                             :show="showDeleteModal"
                             :item-id="itemToDelete"
                             @close="closeDeleteModal"
+                        />
+                        <EigoView
+                            :show="showDetailModal"
+                            :movie="selectedMovie"
+                            :genres="genres"
+                            :genre-emojis="genreEmojis"
+                            @close="closeDetailModal"
+                            @update="handleMovieUpdate"
+                            @delete="openDeleteModal"
                         />
                     </div>
                 </div>
@@ -353,7 +400,7 @@ const genreEmojis = {
     </AuthenticatedLayout>
 </template>
 
-<style>
+<style scoped>
     select option {
         padding: 8px 12px;
         margin: 2px 0;
@@ -361,11 +408,10 @@ const genreEmojis = {
 
     select {
         height: auto;
-        max-height: 250px; /* This will ensure approximately 10 items are visible */
+        max-height: 250px;
         overflow-y: auto;
     }
 
-    /* Custom scrollbar styles */
     select::-webkit-scrollbar {
         width: 8px;
     }
@@ -384,7 +430,6 @@ const genreEmojis = {
         background: #9333ea;
     }
 
-    /* Hide default arrow in some browsers */
     select {
         -webkit-appearance: none;
         -moz-appearance: none;
